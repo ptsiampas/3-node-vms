@@ -1,0 +1,33 @@
+---
+- hosts: cluster_nodes
+  become: yes
+  become_user: root
+  tasks:
+    - name: change hostname
+      hostname:
+        name: "{{ inventory_hostname_short }}"
+
+    - name: Add all the inventory hosts into /etc/hosts
+      tags:
+        - hosts
+      lineinfile:
+        state: present
+        dest: /etc/hosts
+        line: "{{ hostvars[item].ansible_enp0s8.ipv4.address }} {{ hostvars[item].inventory_hostname_short }}"
+      with_items: '{{ groups.all }}'
+
+    - name: Create ceph group
+      group:
+        name: ceph
+        gid:  64045
+        state: present
+        system: yes
+
+    - name: Create ceph user
+      user:
+        name: ceph
+        groups: ceph
+        state: present
+        system: yes
+        createhome: no
+        uid:  64045
